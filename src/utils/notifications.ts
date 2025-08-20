@@ -1,4 +1,4 @@
-import { notify } from 'reapop';
+import { notify, Position } from 'reapop';
 
 // Các loại notification
 export const createSuccessNotification = (title: string, message?: string) => {
@@ -6,7 +6,7 @@ export const createSuccessNotification = (title: string, message?: string) => {
         title,
         message,
         status: 'success',
-        position: 'top-right',
+        position: 'top-right' as Position,
         dismissible: true,
         dismissAfter: 5000,
     });
@@ -17,7 +17,7 @@ export const createErrorNotification = (title: string, message?: string) => {
         title,
         message,
         status: 'error',
-        position: 'top-right',
+        position: 'top-right' as Position,
         dismissible: true,
         dismissAfter: 8000,
     });
@@ -28,7 +28,7 @@ export const createWarningNotification = (title: string, message?: string) => {
         title,
         message,
         status: 'warning',
-        position: 'top-right',
+        position: 'top-right' as Position,
         dismissible: true,
         dismissAfter: 6000,
     });
@@ -39,7 +39,7 @@ export const createInfoNotification = (title: string, message?: string) => {
         title,
         message,
         status: 'info',
-        position: 'top-right',
+        position: 'top-right' as Position,
         dismissible: true,
         dismissAfter: 5000,
     });
@@ -50,7 +50,7 @@ export const createCustomNotification = (config: {
     title: string;
     message?: string;
     status?: 'success' | 'error' | 'warning' | 'info';
-    position?: string;
+    position?: Position;
     dismissible?: boolean;
     dismissAfter?: number;
     icon?: string;
@@ -60,7 +60,7 @@ export const createCustomNotification = (config: {
         title: config.title,
         message: config.message,
         status: config.status || 'info',
-        position: config.position || 'top-right',
+        position: config.position || 'top-right' as Position,
         dismissible: config.dismissible !== false,
         dismissAfter: config.dismissAfter || 5000,
         icon: config.icon,

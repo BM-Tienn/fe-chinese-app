@@ -27,7 +27,33 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      sourcemap: false, // Tắt sourcemap để giảm kích thước
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Tách vendor libraries
+            vendor: ['react', 'react-dom'],
+            redux: ['@reduxjs/toolkit', 'react-redux'],
+            router: ['react-router-dom'],
+            ui: ['lucide-react', 'reapop'],
+            utils: ['axios'],
+          },
+          // Tách chunks nhỏ hơn
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+        },
+      },
+      // Tăng giới hạn cảnh báo chunk size
+      chunkSizeWarningLimit: 1000,
+      // Tối ưu hóa minification
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true, // Loại bỏ console.log trong production
+          drop_debugger: true,
+        },
+      },
     },
     resolve: {
       alias: {
