@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CloseIcon } from '../icons';
 
 interface LoginModalProps {
@@ -17,6 +17,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
+
+  // Reset form khi modal mở
+  useEffect(() => {
+    if (isOpen) {
+      // Kiểm tra xem có base64 email trong localStorage không
+      const base64Email = localStorage.getItem('chinese_ai_email_base64');
+      if (base64Email) {
+        try {
+          const decodedEmail = atob(base64Email);
+          setEmail(decodedEmail);
+        } catch (error) {
+          console.error('Lỗi khi decode base64 email:', error);
+          setEmail('');
+        }
+      } else {
+        setEmail('');
+      }
+      setDisplayName('');
+      setError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -53,9 +74,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 animate-fade-in-fast'>
+    <div className='modal-overlay p-4'>
       <div
-        className='bg-white rounded-2xl shadow-2xl w-full max-w-md'
+        className='modal-content'
         onClick={e => e.stopPropagation()}
       >
         <div className='p-6 border-b'>
@@ -141,8 +162,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
 
             <div className='text-xs text-gray-500 text-center'>
-              Bằng cách tiếp tục, bạn đồng ý với điều khoản sử dụng của chúng
-              tôi
+              Bằng cách tiếp tục, bạn đồng ý với điều khoản sử dụng của chúng tôi
             </div>
           </div>
         </form>

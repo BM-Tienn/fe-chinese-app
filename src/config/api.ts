@@ -1,6 +1,6 @@
 // Cấu hình API
 export const API_CONFIG = {
-    // Backend base URL
+    // Backend base URL - sử dụng port 3001
     BACKEND_BASE_URL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001',
 
     // API endpoints
@@ -12,7 +12,11 @@ export const API_CONFIG = {
             ANALYZE_PRONUNCIATION: '/api/ai-interactions/analyze-pronunciation',
         },
         SESSIONS: '/api/sessions',
-        USERS: '/api/users',
+        USERS: {
+            VERIFY: '/api/users/verify',
+            LOGIN: '/api/users/login',
+            SESSION: '/api/users/session',
+        },
         FRONTEND_ACTIVITIES: '/api/frontend-activities',
     },
 

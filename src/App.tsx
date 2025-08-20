@@ -68,12 +68,13 @@ export default function App() {
       try {
         setIsInitializing(true);
 
-        // Kiểm tra xem có user đã đăng nhập trong localStorage không
+        // 1. Kiểm tra base64 email trong localStorage
+        const base64Email = localStorage.getItem('chinese_ai_email_base64');
         const savedUserId = localStorage.getItem('chinese_ai_user_id');
         const savedSessionId = localStorage.getItem('chinese_ai_session_id');
 
-        if (savedUserId && savedUserId !== 'anonymous' && savedSessionId) {
-          // Có user đã đăng nhập, thử khôi phục session
+        if (base64Email && savedUserId && savedUserId !== 'anonymous' && savedSessionId) {
+          // Có thông tin đăng nhập, thử khôi phục session
           try {
             await dispatch(getUserBySession(savedSessionId)).unwrap();
             console.log('Đã khôi phục user session:', savedSessionId);
@@ -81,17 +82,17 @@ export default function App() {
             console.log('User session đã hết hạn, yêu cầu đăng nhập lại');
             localStorage.removeItem('chinese_ai_session_id');
             localStorage.removeItem('chinese_ai_user_id');
+            // Giữ lại base64 email để user có thể đăng nhập lại
             dispatch(setShowLoginModal(true));
           }
+        } else if (base64Email) {
+          // Có base64 email nhưng không có session, hiển thị login modal
+          console.log('Có email nhưng không có session, hiển thị login modal');
+          dispatch(setShowLoginModal(true));
         } else {
-          // Không có user đã đăng nhập, khởi tạo anonymous session
-          try {
-            await sessionManager.initializeSession();
-            console.log('Đã khởi tạo anonymous session');
-          } catch (error) {
-            console.error('Không thể khởi tạo session:', error);
-            dispatch(setShowLoginModal(true));
-          }
+          // Không có thông tin đăng nhập, hiển thị login modal
+          console.log('Không có thông tin đăng nhập, hiển thị login modal');
+          dispatch(setShowLoginModal(true));
         }
       } catch (error) {
         console.error('Lỗi khi khởi tạo app:', error);
@@ -108,14 +109,19 @@ export default function App() {
   const handleLogin = useCallback(
     async (email: string, displayName?: string) => {
       try {
+        // 1. Lưu base64 email vào localStorage
+        const base64Email = btoa(email);
+        localStorage.setItem('chinese_ai_email_base64', base64Email);
+
+        // 2. Gọi backend để tạo mới hoặc update user
         const result = await dispatch(
           loginUser({ email, displayName })
         ).unwrap();
 
-        // Cập nhật sessionManager với thông tin user mới
+        // 3. Cập nhật sessionManager với thông tin user mới
         sessionManager.updateSessionAfterLogin(result.session.sessionId, result.user.id);
 
-        // Lưu hoạt động đầu tiên
+        // 4. Lưu hoạt động đầu tiên
         try {
           await sessionManager.trackActivity(
             'page_view',
@@ -389,15 +395,34 @@ export default function App() {
             <Footer />
           </div>
         </div>
-      ) : (
+      ) : showLoginModal ? (
+        // Hiển thị modal đăng nhập
         <div className='bg-gray-50 min-h-screen font-sans text-gray-800 flex items-center justify-center'>
           <div className='text-center'>
             <h1 className='text-4xl font-bold text-blue-600 mb-4'>
               Học Tiếng Trung cùng AI
             </h1>
-            <p className='text-gray-600 text-lg'>
+            <p className='text-gray-600 text-lg mb-6'>
               Vui lòng đăng nhập để bắt đầu học
             </p>
+          </div>
+        </div>
+      ) : (
+        // Hiển thị màn hình chào mừng với nút đăng nhập
+        <div className='bg-gray-50 min-h-screen font-sans text-gray-800 flex items-center justify-center'>
+          <div className='text-center'>
+            <h1 className='text-4xl font-bold text-blue-600 mb-4'>
+              Học Tiếng Trung cùng AI
+            </h1>
+            <p className='text-gray-600 text-lg mb-6'>
+              Chào mừng bạn đến với ứng dụng học tiếng Trung thông minh
+            </p>
+            <button
+              onClick={() => dispatch(setShowLoginModal(true))}
+              className='inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105'
+            >
+              Bắt đầu học ngay
+            </button>
           </div>
         </div>
       )}

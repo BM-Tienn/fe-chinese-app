@@ -83,6 +83,11 @@ export const extractBackendData = (response: any) => {
 
 // User Management
 export const userService = {
+  // Verify user theo email
+  verifyUser: async (data: { email: string }) => {
+    return await backendClient.post('/api/users/verify', data);
+  },
+
   // Đăng nhập hoặc tạo user mới
   loginOrCreateUser: async (data: { email: string; displayName?: string }) => {
     return await backendClient.post('/api/users/login', data);
