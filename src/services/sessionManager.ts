@@ -69,24 +69,16 @@ class SessionManager {
     // Validate session hiện có
     private async validateExistingSession(sessionId: string): Promise<SessionInfo> {
         try {
-            // Sử dụng endpoint validate nhanh thay vì getSession đầy đủ
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sessions/${sessionId}/validate`);
+            // Sử dụng backendService thay vì fetch trực tiếp
+            const response = await backendService.sessionService.getSession(sessionId);
 
-            if (!response.ok) {
-                if (response.status === 404 || response.status === 410) {
-                    throw new Error('Session không hợp lệ hoặc đã hết hạn');
-                }
-                throw new Error('Lỗi khi validate session');
-            }
-
-            const result = await response.json();
-
-            if (result.success && result.data) {
+            if (response.data && response.data.success && response.data.data) {
+                const sessionData = response.data.data;
                 return {
-                    sessionId: result.data.sessionId,
-                    userId: result.data.userId || 'anonymous',
-                    isActive: result.data.isActive,
-                    lastActivity: result.data.lastActivity
+                    sessionId: sessionData.sessionId,
+                    userId: sessionData.userId || 'anonymous',
+                    isActive: sessionData.isActive,
+                    lastActivity: sessionData.lastActivity
                 };
             }
 

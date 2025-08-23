@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { ENV_CONFIG } from '../config/api';
 
 // Cấu hình backend API
 const BACKEND_CONFIG = {
-  BASE_URL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001',
-  API_TIMEOUT: parseInt(import.meta.env.VITE_BACKEND_TIMEOUT || '30000'),
+  BASE_URL: ENV_CONFIG.BACKEND_URL,
+  API_TIMEOUT: ENV_CONFIG.API_TIMEOUT,
 };
 
 // Tạo instance axios cho backend API
