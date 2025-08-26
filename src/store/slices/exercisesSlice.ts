@@ -1,5 +1,7 @@
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { apiService } from '../../services/apiService';
+import { sessionManager } from '../../services/sessionManager';
+import { addHistoryItem } from './historySlice';
 
 export interface Exercise {
   question: string;
@@ -39,13 +41,48 @@ const initialState: ExercisesState = {
 
 export const generateExercises = createAsyncThunk(
   'exercises/generateExercises',
-  async (prompt: string, { rejectWithValue }) => {
+  async (prompt: string, { rejectWithValue, dispatch }) => {
+    const startTime = Date.now();
     try {
-      // Gọi trực tiếp apiService.generateExercises với prompt
-      // apiService sẽ tự tạo payload
+      const session = await sessionManager.initializeSession();
       const result = await apiService.generateExercises(prompt);
+
+      dispatch(addHistoryItem({
+        sessionId: session.sessionId,
+        userId: session.userId,
+        endpoint: 'generateExercises',
+        aiModel: 'gemini-2.5-flash-preview-05-20',
+        requestPayload: { prompt },
+        responseData: result,
+        requestTimestamp: new Date().toISOString(),
+        responseTimestamp: new Date().toISOString(),
+        responseTime: Date.now() - startTime,
+        status: 'success',
+        tags: ['exercise-generation', 'ai'],
+      }));
+
       return result;
     } catch (error) {
+      try {
+        const session = await sessionManager.initializeSession();
+        dispatch(addHistoryItem({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          endpoint: 'generateExercises',
+          aiModel: 'gemini-2.5-flash-preview-05-20',
+          requestPayload: { prompt },
+          responseData: { error: 'Lỗi khi tạo bài tập. Vui lòng thử lại.' },
+          requestTimestamp: new Date().toISOString(),
+          responseTimestamp: new Date().toISOString(),
+          responseTime: Date.now() - startTime,
+          status: 'error',
+          errorMessage: 'Lỗi khi tạo bài tập. Vui lòng thử lại.',
+          tags: ['exercise-generation', 'error'],
+        }));
+      } catch (historyError) {
+        console.error('Lỗi khi thêm vào lịch sử:', historyError);
+      }
+
       return rejectWithValue('Lỗi khi tạo bài tập. Vui lòng thử lại.');
     }
   }

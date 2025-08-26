@@ -1,4 +1,6 @@
 import React from 'react';
+import { Vocabulary } from '../../store/slices/analysisSlice';
+import { LoadingSpinner } from '../common/LoadingSpinner';
 import {
   CloseIcon,
   ExerciseIcon,
@@ -8,8 +10,6 @@ import {
   QuoteIcon,
   SpeakerIcon,
 } from '../icons';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import { Vocabulary } from '../../store/slices/analysisSlice';
 
 interface WordDetailModalProps {
   word: Vocabulary | null;
@@ -113,7 +113,33 @@ export const WordDetailModal: React.FC<WordDetailModalProps> = ({
           ) : details ? (
             <div className='space-y-4 text-left'>
               <Section icon={<InfoIcon />} title='Phân tích chi tiết'>
-                <p>{details.analysis}</p>
+                {details.analysis?.etymology && (
+                  <div className='mb-3'>
+                    <strong className='font-medium text-gray-700'>Từ nguyên:</strong>
+                    <p className='mt-1'>{details.analysis.etymology}</p>
+                  </div>
+                )}
+                {details.analysis?.coreMeanings && (
+                  <div className='mb-3'>
+                    <strong className='font-medium text-gray-700'>Nghĩa cốt lõi:</strong>
+                    {details.analysis.coreMeanings.map((meaning: any, index: number) => (
+                      <div key={index} className='mt-2'>
+                        <p className='font-medium text-gray-600'>{meaning.type}:</p>
+                        <ul className='list-disc list-inside ml-4 space-y-1'>
+                          {meaning.senses.map((sense: string, senseIndex: number) => (
+                            <li key={senseIndex} className='text-sm'>{sense}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {details.analysis?.grammaticalNotes && (
+                  <div>
+                    <strong className='font-medium text-gray-700'>Ghi chú ngữ pháp:</strong>
+                    <p className='mt-1'>{details.analysis.grammaticalNotes}</p>
+                  </div>
+                )}
               </Section>
 
               <Section icon={<LightbulbIcon />} title='Cách dùng & Ngữ cảnh'>

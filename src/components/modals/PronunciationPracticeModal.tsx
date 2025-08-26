@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { analyzePronunciation } from '../../services/apiService';
+import { sessionManager } from '../../services/sessionManager';
 import { Vocabulary } from '../../store/slices/analysisSlice';
+import { addHistoryItem } from '../../store/slices/historySlice';
+import { AppDispatch } from '../../store/store';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { CloseIcon, MicIcon } from '../icons';
 
@@ -12,6 +16,7 @@ interface PronunciationPracticeModalProps {
 export const PronunciationPracticeModal: React.FC<
   PronunciationPracticeModalProps
 > = ({ word, onClose }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [status, setStatus] = useState<
     'idle' | 'recording' | 'processing' | 'feedback'
   >('idle');
@@ -171,35 +176,58 @@ export const PronunciationPracticeModal: React.FC<
   };
 
   const analyzePronunciationAudio = async (audioBase64: string) => {
-    const prompt = `Bạn là một giám khảo phát âm tiếng Trung chuyên nghiệp và nghiêm khắc. Học viên được yêu cầu phát âm từ "${word.hanzi}" (pinyin: ${word.pinyin}). Dưới đây là bản ghi âm của họ.
-    Hãy so sánh bản ghi âm với phát âm chuẩn và đưa ra một phân tích chi tiết, bao gồm:
-    1.  **score**: Chấm điểm trên thang 100, dựa trên mức độ gần với phát âm chuẩn.
-    2.  **toneFeedback**: Nhận xét cụ thể về thanh điệu (đúng/sai, sai như thế nào, ví dụ: "thanh 4 đọc thành thanh 1").
-    3.  **initialFeedback**: Nhận xét về phụ âm đầu (ví dụ: "âm 'zh' phát âm chưa đủ cong lưỡi").
-    4.  **finalFeedback**: Nhận xét về vần/âm cuối (ví dụ: "vần 'ang' bị ngắt hơi sớm").
-    5.  **summary**: Tổng kết ngắn gọn và đưa ra một mẹo quan trọng nhất để cải thiện.
-    Hãy trả lời bằng tiếng Việt, định dạng JSON nghiêm ngặt.`;
-
-    const payload = {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
-          ],
-        },
-      ],
-      generationConfig: { responseMimeType: 'application/json' },
-    };
-
+    const startTime = Date.now();
     try {
-      const resultText = await analyzePronunciation(payload);
-      setFeedback(resultText);
-    } catch (err) {
-      console.error('Lỗi khi phân tích phát âm:', err);
-      setError('AI không thể phân tích bản ghi âm, vui lòng thử lại.');
-    } finally {
-      setStatus('feedback');
+      const session = await sessionManager.initializeSession();
+      const prompt = `Bạn là chuyên gia ngôn ngữ học tiếng Trung. Hãy phân tích phát âm của từ "${word?.hanzi}" (${word?.pinyin}) từ bản ghi âm. Đánh giá về: thanh điệu, âm đầu, âm cuối, và độ chính xác tổng thể. Trả về kết quả dưới dạng JSON: {"score": 85, "toneFeedback": "...", "initialFeedback": "...", "finalFeedback": "...", "summary": "..."}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json' }
+      };
+
+      try {
+        const resultText = await analyzePronunciation(payload);
+        setFeedback(resultText);
+
+        // Thêm vào lịch sử
+        dispatch(addHistoryItem({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          endpoint: 'analyzePronunciation',
+          aiModel: 'gemini-2.5-flash-preview-05-20',
+          requestPayload: { word: word.hanzi, audioLength: audioBase64.length },
+          responseData: resultText,
+          requestTimestamp: new Date().toISOString(),
+          responseTimestamp: new Date().toISOString(),
+          responseTime: Date.now() - startTime,
+          status: 'success',
+          tags: ['pronunciation-practice', 'audio-analysis'],
+        }));
+      } catch (err) {
+        console.error('Lỗi khi phân tích phát âm:', err);
+        setError('AI không thể phân tích bản ghi âm, vui lòng thử lại.');
+
+        dispatch(addHistoryItem({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          endpoint: 'analyzePronunciation',
+          aiModel: 'gemini-2.5-flash-preview-05-20',
+          requestPayload: { word: word.hanzi, audioLength: audioBase64.length },
+          responseData: { error: err instanceof Error ? err.message : 'Lỗi không xác định' },
+          requestTimestamp: new Date().toISOString(),
+          responseTimestamp: new Date().toISOString(),
+          responseTime: Date.now() - startTime,
+          status: 'error',
+          errorMessage: err instanceof Error ? err.message : 'Lỗi không xác định',
+          tags: ['pronunciation-practice', 'error'],
+        }));
+      } finally {
+        setStatus('feedback');
+      }
+    } catch (sessionError) {
+      console.error('Lỗi khi khởi tạo session:', sessionError);
+      setError('Không thể khởi tạo phiên làm việc. Vui lòng thử lại.');
     }
   };
 

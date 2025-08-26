@@ -1,5 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '../../services/apiService';
+import { sessionManager } from '../../services/sessionManager';
+import { addHistoryItem } from './historySlice';
 
 export interface Vocabulary {
   hanzi: string;
@@ -40,21 +42,48 @@ const initialState: AnalysisState = {
 
 export const analyzeImage = createAsyncThunk(
   'analysis/analyzeImage',
-  async (imageBase64: string, { rejectWithValue }) => {
+  async (imageBase64: string, { rejectWithValue, dispatch }) => {
+    const startTime = Date.now();
     try {
-      // Gọi trực tiếp apiService.analyzeImage với imageBase64
-      // apiService sẽ tự tạo prompt và payload
+      const session = await sessionManager.initializeSession();
       const result = await apiService.analyzeImage(imageBase64);
+
+      dispatch(addHistoryItem({
+        sessionId: session.sessionId,
+        userId: session.userId,
+        endpoint: 'analyzeImage',
+        aiModel: 'gemini-2.5-flash-preview-05-20',
+        requestPayload: { imageBase64: imageBase64.substring(0, 100) + '...' },
+        responseData: result,
+        requestTimestamp: new Date().toISOString(),
+        responseTimestamp: new Date().toISOString(),
+        responseTime: Date.now() - startTime,
+        status: 'success',
+        tags: ['image-analysis', 'vocabulary'],
+      }));
+
       return result;
     } catch (error) {
-      console.error('Lỗi chi tiết trong analysisSlice:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
 
-      let errorMessage = 'Lỗi khi phân tích hình ảnh. Vui lòng thử lại.';
-
-      if (error instanceof Error) {
-        errorMessage = `Lỗi khi phân tích hình ảnh: ${error.message}`;
-      } else if (typeof error === 'string') {
-        errorMessage = `Lỗi khi phân tích hình ảnh: ${error}`;
+      try {
+        const session = await sessionManager.initializeSession();
+        dispatch(addHistoryItem({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          endpoint: 'analyzeImage',
+          aiModel: 'gemini-2.5-flash-preview-05-20',
+          requestPayload: { imageBase64: imageBase64.substring(0, 100) + '...' },
+          responseData: { error: errorMessage },
+          requestTimestamp: new Date().toISOString(),
+          responseTimestamp: new Date().toISOString(),
+          responseTime: Date.now() - startTime,
+          status: 'error',
+          errorMessage: errorMessage,
+          tags: ['image-analysis', 'error'],
+        }));
+      } catch (historyError) {
+        console.error('Lỗi khi thêm vào lịch sử:', historyError);
       }
 
       return rejectWithValue(errorMessage);

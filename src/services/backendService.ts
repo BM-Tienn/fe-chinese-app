@@ -121,7 +121,12 @@ export const sessionService = {
     deviceInfo?: any;
     metadata?: any;
   }) => {
-    return await backendClient.post('/api/sessions', data);
+    // Lấy userId từ localStorage nếu không có trong data
+    const userId = data.userId || localStorage.getItem('chinese_ai_user_id');
+    return await backendClient.post('/api/sessions', {
+      ...data,
+      userId,
+    });
   },
 
   // Lấy thông tin phiên
@@ -160,7 +165,12 @@ export const activityService = {
     ipAddress?: string;
     metadata?: any;
   }) => {
-    return await backendClient.post('/api/frontend-activities', data);
+    // Lấy userId từ localStorage nếu không có trong data
+    const userId = data.userId || localStorage.getItem('chinese_ai_user_id');
+    return await backendClient.post('/api/frontend-activities', {
+      ...data,
+      userId,
+    });
   },
 
   // Lấy hoạt động theo session

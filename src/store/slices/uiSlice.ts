@@ -23,6 +23,12 @@ const uiSlice = createSlice({
     },
     setWordDetails: (state, action: PayloadAction<any | null>) => {
       state.wordDetails = action.payload;
+
+      // Thêm vào lịch sử nếu có kết quả phân tích
+      if (action.payload) {
+        // Dispatch action để thêm vào lịch sử
+        // Chúng ta sẽ xử lý việc này trong component
+      }
     },
     setLoadingWordDetails: (state, action: PayloadAction<boolean>) => {
       state.loadingWordDetails = action.payload;
